@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatizaciones — Dashboard control</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#172b4d; --muted:#5e6c84; --accent:#0052cc; --line:#dfe1e6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:#0b1c33; color:#fff; padding:16px 20px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; font-size:13px; opacity:.8; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 20px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+  .toolbar input[type=search] { padding:8px 10px; border:1px solid var(--line); border-radius:6px; min-width:220px; }
+  .toolbar select { padding:8px; border:1px solid var(--line); border-radius:6px; }
+  button { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:6px; padding:8px 12px; font-size:13px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  #stats, #updated { padding:8px 20px; font-size:12px; color:var(--muted); }
+  #updated { padding-top:0; }
+  main { padding:12px 20px 40px; max-width:1200px; margin:0 auto; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgba(9,30,66,.25); }
+  th, td { text-align:left; padding:10px 12px; font-size:13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#ebecf0; font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  tr:last-child td { border-bottom:none; }
+  .badge { font-size:11px; border-radius:10px; padding:2px 8px; display:inline-block; white-space:nowrap; }
+  .b-ok { background:#e3fcef; color:#006644; }
+  .b-fallo { background:#ffebe6; color:#bf2600; }
+  .b-roto { background:#ffebe6; color:#bf2600; }
+  .b-apagado { background:#eae6ff; color:#403294; }
+  .b-manual { background:#f4f5f7; color:#5e6c84; border:1px solid var(--line); }
+  .mono { font-family:ui-monospace,monospace; font-size:12px; color:#333; }
+  .rel { color:var(--muted); font-size:12px; }
+  footer { padding:12px 20px; font-size:12px; color:var(--muted); max-width:1200px; margin:0 auto; }
+  #toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px); background:#006644; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:50; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Automatizaciones — control</h1>
+    <p>Tus automatizaciones · última vez que corrieron · se actualiza cada hora</p>
+  </div>
+  <div id="total"></div>
+</header>
+
+<div class="toolbar">
+  <input type="search" id="q" placeholder="Filtrar, ej: n8n, cron, plex…">
+  <select id="fEstado">
+    <option value="">Todos los estados</option>
+    <option value="ok">OK</option>
+    <option value="fallo">Fallo</option>
+    <option value="roto">Roto</option>
+    <option value="manual">Manual</option>
+  </select>
+  <button class="primary" id="btnAhora">Actualizar ahora</button>
+  <span id="cuenta" style="font-size:12px;color:var(--muted)"></span>
+</div>
+<div id="stats"></div>
+<div id="updated"></div>
+
+<main>
+<table>
+  <thead><tr><th>Automatización</th><th>Tipo / Cuándo</th><th>Última vez</th><th>Estado</th><th>Detalle</th></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+</main>
+
+<footer>Fuente: <code>automatizaciones.json</code> (generado por <code>update.py</code> cada hora) · Servido en <code>:8081/automatizaciones/automatizaciones.html</code> · Detalle completo en <code>INVENTARIO.md</code></footer>
+<div id="toast" role="status"></div>
+
+<script>
+const URL_JSON = 'automatizaciones.json';
+let DATA = {generado:null, items:[]};
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function fmtFecha(iso){
+  if(!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  } catch(e){ return iso; }
+}
+function rel(iso){
+  if(!iso) return 'sin dato';
+  const ms = Date.now() - new Date(iso).getTime();
+  if(ms < 0) return 'futuro';
+  const m = Math.floor(ms/60000);
+  if(m < 1) return 'ahora mismo';
+  if(m < 60) return `hace ${m} min`;
+  const h = Math.floor(m/60);
+  if(h < 48) return `hace ${h} h`;
+  const d = Math.floor(h/24);
+  return `hace ${d} días`;
+}
+function badge(e){
+  const map = {ok:['b-ok','OK'], fallo:['b-fallo','FALLO'], roto:['b-roto','ROTO'], apagado:['b-apagado','APAGADO'], manual:['b-manual','MANUAL']};
+  const c = map[e] || map.manual;
+  return `<span class="badge ${c[0]}">${c[1]}</span>`;
+}
+
+async function cargar(silencioso){
+  try {
+    const r = await fetch(URL_JSON, {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    DATA = await r.json();
+    render();
+    if(!silencioso) toast('Actualizado · ' + (DATA.generado||''));
+  } catch(e){ toast('No se pudo leer '+URL_JSON, true); }
+}
+
+function render(){
+  const q = document.getElementById('q').value.toLowerCase();
+  const fe = document.getElementById('fEstado').value;
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  const items = (DATA.items||[]).filter(it => {
+    if(fe && it.estado !== fe) return false;
+    if(!q) return true;
+    return ((it.nombre||'')+' '+(it.tipo||'')+' '+(it.schedule||'')+' '+(it.donde||'')+' '+(it.detalle||'')).toLowerCase().includes(q);
+  });
+  for(const it of items){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${esc(it.nombre)}</b><br><span class="mono">${esc(it.id||'')}</span><br><span class="rel">${esc(it.donde||'')}</span></td>
+      <td><span class="mono">${esc(it.tipo||'')}</span><br>${esc(it.schedule||'')}</td>
+      <td>${fmtFecha(it.lastRun)}<br><span class="rel">${rel(it.lastRun)}</span></td>
+      <td>${badge(it.estado)}</td>
+      <td>${esc(it.detalle||'')}</td>`;
+    tb.appendChild(tr);
+  }
+  const all = DATA.items||[];
+  const c = s => all.filter(x=>x.estado===s).length;
+  document.getElementById('stats').textContent = `${items.length} visibles · ${all.length} total · OK ${c('ok')} · Fallo ${c('fallo')} · Roto ${c('roto')} · Apagado ${c('apagado')} · Manual ${c('manual')}`;
+  document.getElementById('total').textContent = all.length + ' automatizaciones';
+  document.getElementById('updated').textContent = `Datos generados: ${DATA.generado||'—'} · Esta página se refresca cada hora`;
+}
+
+let toastTimer=null;
+function toast(msg, isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background = isErr ? '#bf2600' : '#006644';
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+document.getElementById('q').oninput = render;
+document.getElementById('fEstado').onchange = render;
+document.getElementById('btnAhora').onclick = ()=>cargar(false);
+
+// auto-refresh cada hora (3600000 ms) + cuenta atrás
+let seg = 3600;
+setInterval(()=>{ seg--; if(seg<=0){ seg=3600; cargar(true); } document.getElementById('cuenta').textContent = `próxima auto-actualización en ${Math.floor(seg/60)}:${String(seg%60).padStart(2,'0')}`; }, 1000);
+
+cargar(true);
+</script>
+</body>
+</html>

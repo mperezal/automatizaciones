@@ -1,0 +1,135 @@
+{
+  "generado": "2026-11-27T05:00:03+01:00",
+  "items": [
+    {
+      "id": "docker-auto-update",
+      "nombre": "Docker Auto-Update",
+      "tipo": "n8n",
+      "donde": "NAS Docker (n8n-n8n-1)",
+      "schedule": "cada 7 h",
+      "estado": "ok",
+      "lastRun": "2026-11-26T23:00:40.062Z",
+      "detalle": "id 687 error"
+    },
+    {
+      "id": "monitor-nas-salud",
+      "nombre": "Monitor NAS Salud",
+      "tipo": "n8n",
+      "donde": "NAS Docker (n8n-n8n-1)",
+      "schedule": "cada 6 h",
+      "estado": "ok",
+      "lastRun": "2026-11-26T23:00:05.144Z",
+      "detalle": "id 686 error · doc nas/docs/n8n-monitor-nas-salud.md"
+    },
+    {
+      "id": "errores-diarios-ingles",
+      "nombre": "Errores diarios de inglés",
+      "tipo": "cron",
+      "donde": "NAS cron → contenedor smanx_opencode-1",
+      "schedule": "23:55 diario",
+      "estado": "ok",
+      "lastRun": "2026-11-21T23:55:20+01:00",
+      "detalle": "2026-11-21.md · log /home/emlami/errores-diarios.log"
+    },
+    {
+      "id": "modelos-opencode",
+      "nombre": "Modelos IA OpenCode",
+      "tipo": "cron",
+      "donde": "NAS cron + LangGraph",
+      "schedule": "07:00, cada 14 días",
+      "estado": "ok",
+      "lastRun": "2026-11-15T07:00:00+01:00",
+      "detalle": "chequeo diario, real cada 14 d · log modelos-opencode-langgraph/logs/langgraph.log"
+    },
+    {
+      "id": "ofertas-ia",
+      "nombre": "Ofertas IA",
+      "tipo": "cron",
+      "donde": "NAS cron + LangGraph",
+      "schedule": "07:00 chequeo diario → cada 4 d",
+      "estado": "ok",
+      "lastRun": "2026-11-26T07:00:18+01:00",
+      "detalle": "cron 0 7 * * * + cada-4-dias.sh · log ofertas-ia-langgraph/logs/cron.log"
+    },
+    {
+      "id": "newsletter-radar-tech",
+      "nombre": "Newsletter Radar Tech",
+      "tipo": "cron",
+      "donde": "NAS cron",
+      "schedule": "07:05 chequeo diario → cada 6 d",
+      "estado": "ok",
+      "lastRun": "2026-11-21T08:57:03+01:00",
+      "detalle": "envía el numero-*.html más reciente (ahora numero-002.html) · cron /etc/cron.d/newsletter-radar + cada-6-dias.sh · log newsletter-radar-tech/logs/cron.log"
+    },
+    {
+      "id": "plex-ingest",
+      "nombre": "Ingesta Plex",
+      "tipo": "cron",
+      "donde": "NAS cron",
+      "schedule": "cada 10 min",
+      "estado": "ok",
+      "lastRun": "2026-11-27T05:00:01+01:00",
+      "detalle": "modo link · log /volume1/docker/plex-ingest/ingest.log"
+    },
+    {
+      "id": "gdrive-refresh",
+      "nombre": "Refresh token Google Drive",
+      "tipo": "cron",
+      "donde": "NAS cron",
+      "schedule": "cada 45 min",
+      "estado": "roto",
+      "lastRun": null,
+      "detalle": "ruta /volume1/docker/opencode/... no existe · decisión 2026-11-15: no tocar · /bin/bash: /volume1/docker/opencode/nas/scripts/refresh-gdrive-token.sh: No such file or directory"
+    },
+    {
+      "id": "anki-push",
+      "nombre": "Push de mazos Anki",
+      "tipo": "manual",
+      "donde": "NAS manual",
+      "schedule": "manual",
+      "estado": "manual",
+      "lastRun": null,
+      "detalle": "script nas/scripts/anki-push.sh · sin cron"
+    },
+    {
+      "id": "backup-opencode",
+      "nombre": "Backup de opencode",
+      "tipo": "manual",
+      "donde": "NAS manual",
+      "schedule": "manual",
+      "estado": "manual",
+      "lastRun": null,
+      "detalle": "script nas/scripts/backup-opencode.sh · pendiente decidir horario"
+    },
+    {
+      "id": "kanban-sync",
+      "nombre": "Kanban auto-sync",
+      "tipo": "sync",
+      "donde": "contenedor static-tools :8081",
+      "schedule": "al guardar",
+      "estado": "ok",
+      "lastRun": "2026-11-19T22:27:28+01:00",
+      "detalle": "PUT kanban/kanban.json"
+    },
+    {
+      "id": "vikunja-digest",
+      "nombre": "Pendientes Vikunja",
+      "tipo": "cron",
+      "donde": "NAS cron → contenedor opencode",
+      "schedule": "08:00 días alternos",
+      "estado": "ok",
+      "lastRun": "2026-11-23T07:00:03+01:00",
+      "detalle": "log /home/emlami/vikunja-digest.log"
+    },
+    {
+      "id": "opencode-password-file",
+      "nombre": "Contraseña opencode en .txt",
+      "tipo": "manual",
+      "donde": "NAS → contenedor opencode",
+      "schedule": "al rotar (manual)",
+      "estado": "manual",
+      "lastRun": "2026-11-17T07:10:58+01:00",
+      "detalle": "sin cron desde 2026-11-20 (era cada minuto) · fecha = última vez que cambió la clave · script nas/scripts/rotar-password-opencode.sh (--sync) · doc nas/docs/opencode-password-txt.md"
+    }
+  ]
+}
